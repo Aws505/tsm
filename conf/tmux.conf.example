@@ -1,0 +1,120 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# TSM — TMUX Session Manager
+# conf/tmux.conf.example
+#
+# This is the distributable example configuration.
+# To use it:
+#
+#   cp conf/tmux.conf.example conf/tmux.conf
+#
+# Then edit conf/tmux.conf for your own preferences.
+# Your tmux.conf is gitignored — this example file is what gets committed.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Prefix ────────────────────────────────────────────────────────────────────
+# Ctrl+a is easier to reach on mobile keyboards than the default Ctrl+b.
+# Remove these lines to keep the default Ctrl+b prefix.
+unbind C-b
+set-option -g prefix C-a
+bind-key C-a send-prefix          # double-tap to send a literal Ctrl+a
+
+# ── Mouse ─────────────────────────────────────────────────────────────────────
+set -g mouse on
+
+# ── Terminal & colour ─────────────────────────────────────────────────────────
+set -g default-terminal "tmux-256color"
+set -ga terminal-overrides ",xterm-256color:Tc"
+set -ga terminal-overrides ",*256col*:Tc"
+
+# ── General ───────────────────────────────────────────────────────────────────
+set -g history-limit 20000
+set -g base-index 1               # windows number from 1 (easier to type)
+setw -g pane-base-index 1
+set -g renumber-windows on        # close gaps when a window is closed
+setw -g allow-rename off          # keep window names stable
+set -g set-titles on
+set -g set-titles-string "#S / #W"
+set -sg escape-time 10            # faster Esc response (important for vim/nvim)
+set -g focus-events on
+
+# ── Activity monitoring ───────────────────────────────────────────────────────
+setw -g monitor-activity on
+set  -g visual-activity off       # flash status bar, don't beep
+
+# ── Session quick-switch bindings (Prefix + letter) ──────────────────────────
+# 'm' always switches to the main launcher session.
+bind-key m run-shell 'tmux switch-client -t main 2>/dev/null || tmux display "main session not running"'
+
+# Add one bind-key per session you define in conf/sessions.conf.
+# Choose a letter that matches your session name for easy recall.
+# Avoid: m s S H J K L v c | -  (already bound below)
+# Examples:
+#   bind-key e run-shell 'tmux switch-client -t code  2>/dev/null || tmux display "code not running"'
+#   bind-key d run-shell 'tmux switch-client -t dev   2>/dev/null || tmux display "dev not running"'
+#   bind-key o run-shell 'tmux switch-client -t other 2>/dev/null || tmux display "other not running"'
+
+# prefix+s → built-in visual session/window chooser (arrow-key nav)
+bind-key s choose-tree -sZ
+
+# prefix+S → jump to the TSM session menu in 'main'
+bind-key S run-shell 'tmux switch-client -t main && tmux send-keys -t main "" Enter'
+
+# ── Pane navigation — no prefix needed ────────────────────────────────────────
+# Alt+Arrow works in most terminals including mobile (Terminus).
+bind-key -n M-Left  select-pane -L
+bind-key -n M-Right select-pane -R
+bind-key -n M-Up    select-pane -U
+bind-key -n M-Down  select-pane -D
+
+# Pane resize with Prefix + HJKL
+bind-key H resize-pane -L 5
+bind-key J resize-pane -D 5
+bind-key K resize-pane -U 5
+bind-key L resize-pane -R 5
+
+# Pane split with | and - (more intuitive than the defaults " and %)
+bind-key | split-window -h -c "#{pane_current_path}"
+bind-key - split-window -v -c "#{pane_current_path}"
+unbind '"'
+unbind %
+
+# New window in the same directory
+bind-key c new-window -c "#{pane_current_path}"
+
+# ── Copy mode — vi keys ───────────────────────────────────────────────────────
+setw -g mode-keys vi
+bind-key v copy-mode
+bind-key -T copy-mode-vi v send-keys -X begin-selection
+bind-key -T copy-mode-vi y send-keys -X copy-selection-and-cancel
+
+# ── Status bar ────────────────────────────────────────────────────────────────
+set -g status on
+set -g status-position top        # top stays visible when a phone keyboard is open
+set -g status-interval 5
+
+set -g status-style          "bg=#1e2030 fg=#636da6"
+set -g status-left-length    40
+set -g status-right-length   40
+
+# Left: prefix-active indicator + current session name
+set -g status-left \
+  "#{?client_prefix,#[fg=#ff757f bold] C-a ,#[fg=#82aaff bold] #S }#[fg=#636da6]│ "
+
+# Centre: window list
+set -g window-status-separator      ""
+set -g window-status-format         "#[fg=#636da6] #I:#W#{?window_activity_flag,!,} "
+set -g window-status-current-format "#[fg=#c8d3f5,bg=#2d3f76,bold] #I:#W "
+
+# Right: time only by default.
+# To add session shortcut hints, list them here and keep them in sync with
+# the bind-key lines above, e.g.:
+#   "#[fg=#636da6]e:code d:dev o:other #[fg=#82aaff]%H:%M"
+set -g status-right "#[fg=#82aaff]%H:%M"
+
+# Pane borders
+set -g pane-border-style        "fg=#2d3f76"
+set -g pane-active-border-style "fg=#82aaff"
+
+# Message / command bar
+set -g message-style         "fg=#c8d3f5 bg=#1e2030 bold"
+set -g message-command-style "fg=#ffc777 bg=#1e2030"

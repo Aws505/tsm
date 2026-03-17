@@ -2,10 +2,10 @@
 # .gitignore — TSM: TMUX Session Manager
 # ─────────────────────────────────────────────────────────────────────────────
 
-# ── User session config ───────────────────────────────────────────────────────
-# Copy conf/sessions.conf.example → conf/sessions.conf and customise locally.
-# Your personal sessions.conf is never committed.
+# ── User config files ─────────────────────────────────────────────────────────
+# Copy the .example files and customise locally. Personal configs are never committed.
 conf/sessions.conf
+conf/tmux.conf
 
 # ── Editor / OS artefacts ─────────────────────────────────────────────────────
 .DS_Store
