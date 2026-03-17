@@ -1,0 +1,9 @@
+# tsm: SSH auto-attach
+# On every SSH login: ensure all tmux sessions exist and attach to main.
+if [ -z "$TMUX" ] && [ -n "$SSH_CONNECTION" ]; then
+    if command -v tsm &>/dev/null; then
+        tsm
+    elif [ -x "$HOME/.local/bin/tsm" ]; then
+        "$HOME/.local/bin/tsm"
+    fi
+fi

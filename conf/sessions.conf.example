@@ -1,0 +1,55 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# TSM — TMUX Session Manager
+# conf/sessions.conf.example
+#
+# This is the distributable example configuration.
+# To use it:
+#
+#   cp conf/sessions.conf.example conf/sessions.conf
+#
+# Then edit conf/sessions.conf for your own sessions.
+# Your sessions.conf is gitignored — this example file is what gets committed.
+#
+# The same index across all arrays = one session definition.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Session names ─────────────────────────────────────────────────────────────
+# Internal tmux session identifiers (no spaces).
+SESSIONS=( code dev other )
+
+# ── Display labels ────────────────────────────────────────────────────────────
+# Human-readable names shown in the session menu.
+LABELS=( "Project workspace" "AI developer" "General shell" )
+
+# ── Quick-switch keys ─────────────────────────────────────────────────────────
+# One letter per session. Bound as Prefix + <key> in tmux.conf.
+# Avoid keys already used: m (main), s (chooser), S (menu script),
+# H/J/K/L (pane resize), v (copy mode), c (new window), | and -.
+KEYS=( e d o )
+
+# ── Working directories ───────────────────────────────────────────────────────
+# Starting directory for each session. Falls back to $HOME if the path does
+# not exist at session creation time.
+DIRS=( "$HOME/Projects" "$HOME/Projects" "$HOME" )
+
+# ── Startup commands ──────────────────────────────────────────────────────────
+# What to run in the first window when a session is first created:
+#
+#   ""      — plain shell, nothing sent
+#   "auto"  — auto-detect and launch an AI tool (claude → aider → nothing)
+#             Override the detected tool with: export DEV_AI_CMD="aider --model gpt-4o"
+#   "claude"  — explicitly launch Claude Code
+#   "codex"   — explicitly launch OpenAI Codex
+#   any str — sent verbatim to the shell (e.g. "npm run dev", "python manage.py shell")
+INIT_CMDS=( "" "auto" "" )
+
+# ── Per-session environment variables ─────────────────────────────────────────
+# Space-separated KEY=VALUE pairs applied when the session is created.
+# Applied both to tmux's environment table (inherited by future panes/windows)
+# and exported into the initial shell window before INIT_CMD runs.
+# Use "" for sessions that need no extra environment.
+#
+# Examples:
+#   "CODEX_DISABLE_SANDBOX=1"              — give a session outbound internet access
+#   "NODE_ENV=development PORT=3000"       — multiple vars, space-separated
+SESSION_ENVS=( "" "" "" )

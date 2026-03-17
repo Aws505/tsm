@@ -1,0 +1,25 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# .gitignore — TSM: TMUX Session Manager
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── User session config ───────────────────────────────────────────────────────
+# Copy conf/sessions.conf.example → conf/sessions.conf and customise locally.
+# Your personal sessions.conf is never committed.
+conf/sessions.conf
+
+# ── Editor / OS artefacts ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# ── Claude Code local settings ────────────────────────────────────────────────
+.claude/settings.local.json
+
+# ── Shell / env overrides ─────────────────────────────────────────────────────
+.env
+.env.local
+*.local.conf
