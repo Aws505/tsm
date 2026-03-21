@@ -31,6 +31,7 @@ KEYS=( ... )          # tmux prefix+key bindings
 DIRS=( ... )          # starting working directory
 INIT_CMDS=( ... )     # command to run on session start ("", "auto", or explicit cmd)
 SESSION_ENVS=( ... )  # space-separated KEY=VALUE env vars applied at session creation
+SHOW_IPS=( ... )      # interface names whose IPv4 addresses appear in the menu header
 ```
 
 A user override (not tracked in git) can be placed at `~/.config/tmsm/sessions.conf`.

@@ -11,6 +11,7 @@ START_SCRIPT="$SCRIPT_DIR/start-sessions.sh"
 SESSIONS=( code dev codex relay share other )
 LABELS=( "Project workspace" "Claude" "Codex" "Relay" "Share" "General shell" )
 KEYS=( e d x r h o )
+SHOW_IPS=()
 
 _conf_user="$HOME/.config/tmsm/sessions.conf"
 _conf_proj="$(dirname "$SCRIPT_DIR")/conf/sessions.conf"
@@ -22,6 +23,27 @@ elif [ -f "$_conf_proj" ]; then
     # shellcheck source=/dev/null
     source "$_conf_proj"
 fi
+
+# ── IP address display ────────────────────────────────────────────────────────
+# Returns a formatted string of "iface IP" pairs for each interface in SHOW_IPS.
+# Interfaces without an IPv4 address are shown as "down".
+get_ip_addresses() {
+    local parts=() iface ip
+    for iface in "${SHOW_IPS[@]}"; do
+        ip=$(ip -4 addr show "$iface" 2>/dev/null | awk '/inet / {split($2,a,"/"); print a[1]; exit}')
+        if [ -n "$ip" ]; then
+            parts+=( "$(printf '\033[1;36m%s\033[0m \033[0;37m%s\033[0m' "$iface" "$ip")" )
+        else
+            parts+=( "$(printf '\033[1;36m%s\033[0m \033[1;31mdown\033[0m' "$iface")" )
+        fi
+    done
+    local result="" part
+    for part in "${parts[@]}"; do
+        [ -n "$result" ] && result+="  \033[90m·\033[0m  "
+        result+="$part"
+    done
+    printf '%s' "$result"
+}
 
 # ── Key reading (arrow-key aware) ─────────────────────────────────────────────
 read_key() {
@@ -73,6 +95,9 @@ draw_menu() {
     printf '└──────────────────────────────────────────┘\n'
     printf '\033[0m'
     printf '\033[90m  current: \033[1;36mmain\033[90m  %s\033[0m\n' "$(date '+%H:%M')"
+    if [ ${#SHOW_IPS[@]} -gt 0 ]; then
+        printf '  %b\n' "$(get_ip_addresses)"
+    fi
     printf '\n'
 
     local i

@@ -53,3 +53,14 @@ INIT_CMDS=( "" "auto" "" )
 #   "CODEX_DISABLE_SANDBOX=1"              — give a session outbound internet access
 #   "NODE_ENV=development PORT=3000"       — multiple vars, space-separated
 SESSION_ENVS=( "" "" "" )
+
+# ── IP addresses shown in the session menu header ──────────────────────────────
+# List interface names whose IPv4 addresses should appear at the top of the
+# TSM menu. Interfaces that are down or have no IPv4 address show as "down".
+# Omit or set to () to disable IP display entirely.
+#
+# Examples:
+#   SHOW_IPS=( eth0 )               — single wired interface
+#   SHOW_IPS=( wlan0 tailscale0 )   — wifi + Tailscale VPN
+#   SHOW_IPS=()                     — disabled (default)
+SHOW_IPS=()

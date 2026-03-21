@@ -82,7 +82,7 @@ tsm
 
 All session definitions live in **`conf/sessions.conf`**. It is gitignored — `conf/sessions.conf.example` is the version-controlled template.
 
-The six arrays are index-aligned: the same position across all arrays defines one session.
+The six arrays are index-aligned: the same position across all arrays defines one session. There is also one scalar setting for IP display.
 
 ```bash
 SESSIONS=( code dev other )
@@ -91,6 +91,9 @@ KEYS=(     e d o )
 DIRS=(     "$HOME/Projects" "$HOME/Projects" "$HOME" )
 INIT_CMDS=( "" "auto" "" )
 SESSION_ENVS=( "" "" "" )
+
+# Optional: show IPv4 addresses in the menu header
+SHOW_IPS=( wlan0 tailscale0 )
 ```
 
 ### `INIT_CMDS` — startup behaviour
@@ -120,6 +123,18 @@ SESSION_ENVS=( "" "CODEX_DISABLE_SANDBOX=1" "" )
 # Multiple vars, space-separated
 SESSION_ENVS=( "" "NODE_ENV=development PORT=3000" "" )
 ```
+
+### `SHOW_IPS` — IP addresses in the menu header
+
+An optional array of network interface names. When set, each interface's IPv4 address is displayed on the menu header line after the current time. Interfaces with no address show as `down`.
+
+```bash
+SHOW_IPS=( wlan0 tailscale0 )   # wifi + Tailscale VPN
+SHOW_IPS=( eth0 )               # single wired interface
+SHOW_IPS=()                     # disabled (default)
+```
+
+This is read from the same `sessions.conf` as all other settings — set it in your personal config to keep it out of version control.
 
 ### Adding a session
 
@@ -155,6 +170,7 @@ The `main` session runs a continuous interactive menu (`session-menu.sh`):
 │         TMUX SESSION MANAGER             │
 └──────────────────────────────────────────┘
   current: main  14:32
+  wlan0 192.168.1.42  ·  tailscale0 100.100.0.1
 
   ▶ [1] code      Project workspace        idle
     [2] dev        AI developer             active (1)
