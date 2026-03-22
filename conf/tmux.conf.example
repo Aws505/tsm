@@ -59,6 +59,11 @@ bind-key s choose-tree -sZ
 # prefix+S → jump to the TSM session menu in 'main'
 bind-key S run-shell 'tmux switch-client -t main && tmux send-keys -t main "" Enter'
 
+# ── Window navigation ─────────────────────────────────────────────────────────
+bind-key n next-window          # next window
+bind-key l last-window          # most recently used window
+bind-key p previous-window      # previous window
+
 # ── Pane navigation — no prefix needed ────────────────────────────────────────
 # Alt+Arrow works in most terminals including mobile (Terminus).
 bind-key -n M-Left  select-pane -L
@@ -106,9 +111,9 @@ set -g window-status-format         "#[fg=#636da6] #I:#W#{?window_activity_flag,
 set -g window-status-current-format "#[fg=#c8d3f5,bg=#2d3f76,bold] #I:#W "
 
 # Right: time only by default.
-# To add session shortcut hints, list them here and keep them in sync with
-# the bind-key lines above, e.g.:
-#   "#[fg=#636da6]e:code d:dev o:other #[fg=#82aaff]%H:%M"
+# To add session key hints, set status-right-length and customise, e.g.:
+#   set -g status-right-length 55
+#   set -g status-right "#[fg=#636da6]e:code d:dev o:other  #[fg=#82aaff]%H:%M"
 set -g status-right "#[fg=#82aaff]%H:%M"
 
 # Pane borders

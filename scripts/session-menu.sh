@@ -104,16 +104,16 @@ draw_menu() {
     for i in "${!SESSIONS[@]}"; do
         local name="${SESSIONS[$i]}"
         local label="${LABELS[$i]:-$name}"
+        local key_hint="${KEYS[$i]:- }"
         local status
         status="$(session_status "$name")"
 
         if [[ "$i" -eq "$selected" ]]; then
-            # Highlighted / selected row
-            printf '  \033[1;33m▶\033[0m \033[7m\033[1;37m [%d] %-8s  %-22s \033[0m  %b\n' \
-                   "$((i+1))" "$name" "$label" "$status"
+            printf '  \033[1;33m▶\033[0m \033[7m\033[1;37m [%d] %-7s ^a·%-1s  %-19s \033[0m  %b\n' \
+                   "$((i+1))" "$name" "$key_hint" "$label" "$status"
         else
-            printf '    \033[1;37m[%d]\033[0m \033[1;36m%-8s\033[0m  %-22s  %b\n' \
-                   "$((i+1))" "$name" "$label" "$status"
+            printf '    \033[1;37m[%d]\033[0m \033[1;36m%-7s\033[0m \033[90m^a·%-1s\033[0m  %-19s  %b\n' \
+                   "$((i+1))" "$name" "$key_hint" "$label" "$status"
         fi
     done
 
@@ -122,6 +122,13 @@ draw_menu() {
     printf '  \033[90m↑/↓  navigate     Enter/[num]  select\033[0m\n'
     printf '  \033[90m[r]  refresh  [s] start all  [q]  quit\033[0m\n'
     printf '  \033[90m[k]  kill ALL sessions and exit\033[0m\n'
+    printf '\n'
+    printf '  \033[90m──────────────────────────────────────────\033[0m\n'
+    printf '  \033[1;34mtmux cheat sheet\033[90m  prefix: \033[1;33m^a\033[90m (C-a)\033[0m\n'
+    printf '  \033[90m^a n  next window  ^a l  last window\033[0m\n'
+    printf '  \033[90m^a |  split →      ^a -  split ↓\033[0m\n'
+    printf '  \033[90m^a c  new window   ^a d  detach\033[0m\n'
+    printf '  \033[90mAlt+↑↓←→ pane nav  ^a [  copy mode\033[0m\n'
     printf '\n'
 }
 

@@ -199,13 +199,16 @@ The prefix is **`Ctrl+a`** (reachable on every mobile keyboard).
 | Keys | Action |
 |------|--------|
 | `Prefix` + `m` | Switch to **main** (session menu) |
-| `Prefix` + `e` | Switch to **code** *(default config)* |
-| `Prefix` + `d` | Switch to **dev** *(default config)* |
-| `Prefix` + `o` | Switch to **other** *(default config)* |
+| `Prefix` + `e` | Switch to **code** |
+| `Prefix` + `d` | Switch to **dev** |
+| `Prefix` + `x` | Switch to **codex** |
+| `Prefix` + `r` | Switch to **relay** |
+| `Prefix` + `h` | Switch to **share** |
+| `Prefix` + `o` | Switch to **other** |
 | `Prefix` + `s` | Full visual session/window chooser |
 | `Prefix` + `S` | Jump to the session menu in `main` |
 
-Keys for additional sessions are defined in `conf/tmux.conf` alongside the session definitions.
+Session keys are defined in `conf/sessions.conf` (`KEYS` array) and mirrored as bind-keys in `conf/tmux.conf`.
 
 ### Pane and window management
 
@@ -216,6 +219,9 @@ Keys for additional sessions are defined in `conf/tmux.conf` alongside the sessi
 | `Prefix` + `-` | Split pane vertically |
 | `Prefix` + `H/J/K/L` | Resize pane |
 | `Prefix` + `c` | New window (opens in current path) |
+| `Prefix` + `n` | Next window |
+| `Prefix` + `l` | Last (most recently used) window |
+| `Prefix` + `p` | Previous window |
 
 ### Copy mode
 
