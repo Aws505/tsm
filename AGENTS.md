@@ -16,7 +16,7 @@ This repo is a self-contained tmux setup (`tsm`) that auto-attaches SSH sessions
 | `other` | General shell   | `o`     | General-purpose shell                        |
 | `main`  | Menu            | `m`     | Landing screen — runs the session-menu loop  |
 
-Quick-switch: `Prefix + <key>` (prefix is `Ctrl+a`).
+Quick-switch: `Prefix + <key>` (prefix is `Ctrl+a`). The menu header displays its own shortcut (`^a·m`) so you can see how to return to it from any other session.
 
 ---
 
