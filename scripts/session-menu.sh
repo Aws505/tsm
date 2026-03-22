@@ -94,7 +94,7 @@ draw_menu() {
     printf '│         TMUX SESSION MANAGER             │\n'
     printf '└──────────────────────────────────────────┘\n'
     printf '\033[0m'
-    printf '\033[90m  current: \033[1;36mmain\033[90m  %s\033[0m\n' "$(date '+%H:%M')"
+    printf '\033[90m  current: \033[1;36mmain\033[90m  ^a·\033[1;33mm\033[90m  %s\033[0m\n' "$(date '+%H:%M')"
     if [ ${#SHOW_IPS[@]} -gt 0 ]; then
         printf '  %b\n' "$(get_ip_addresses)"
     fi
