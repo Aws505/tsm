@@ -12,6 +12,7 @@ SESSIONS=( code dev codex relay share other )
 LABELS=( "Project workspace" "Claude" "Codex" "Relay" "Share" "General shell" )
 KEYS=( e d x r h o )
 SHOW_IPS=()
+MENU_KEY=m
 
 _conf_user="$HOME/.config/tsm/sessions.conf"
 _conf_proj="$(dirname "$SCRIPT_DIR")/conf/sessions.conf"
@@ -94,7 +95,7 @@ draw_menu() {
     printf '│         TMUX SESSION MANAGER             │\n'
     printf '└──────────────────────────────────────────┘\n'
     printf '\033[0m'
-    printf '\033[90m  current: \033[1;36mmain\033[90m  ^a·\033[1;33mm\033[90m  %s\033[0m\n' "$(date '+%H:%M')"
+    printf '\033[90m  current: \033[1;36mmain\033[90m  ^a·\033[1;33m%s\033[90m  %s\033[0m\n' "$MENU_KEY" "$(date '+%H:%M')"
     if [ ${#SHOW_IPS[@]} -gt 0 ]; then
         printf '  %b\n' "$(get_ip_addresses)"
     fi
