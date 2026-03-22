@@ -16,7 +16,7 @@ This repo is a self-contained tmux setup (`tsm`) that auto-attaches SSH sessions
 | `other` | General shell   | `o`     | General-purpose shell                        |
 | `main`  | Menu            | `m`     | Landing screen — runs the session-menu loop  |
 
-Quick-switch: `Prefix + <key>` (prefix is `Ctrl+a`). The menu header displays its own shortcut (`^a·m`) so you can see how to return to it from any other session.
+Quick-switch: `Prefix + <key>` (prefix is `Ctrl+a`). The menu header displays its own shortcut (e.g. `^a·m`) — the key is auto-detected from `~/.tmux.conf` at startup so it always stays in sync.
 
 ---
 
@@ -32,7 +32,7 @@ DIRS=( ... )          # starting working directory
 INIT_CMDS=( ... )     # command to run on session start ("", "auto", or explicit cmd)
 SESSION_ENVS=( ... )  # space-separated KEY=VALUE env vars applied at session creation
 SHOW_IPS=( ... )      # interface names whose IPv4 addresses appear in the menu header
-MENU_KEY=m            # prefix+key that switches back to the menu session (shown in header)
+MENU_KEY=m            # fallback key for the menu session — auto-detected from ~/.tmux.conf
 ```
 
 A user override (not tracked in git) can be placed at `~/.config/tsm/sessions.conf`.

@@ -65,9 +65,10 @@ SESSION_ENVS=( "" "" "" )
 #   SHOW_IPS=()                     — disabled (default)
 SHOW_IPS=()
 
-# ── Menu session quick-switch key ─────────────────────────────────────────────
-# The Prefix + key that switches back to the 'main' (menu) session.
-# Must match the bind-key line in your tmux.conf. Shown in the menu header
-# so you can always see how to return here from any other session.
-# Avoid reusing keys already in KEYS=() or reserved tmux bindings.
+# ── Menu session quick-switch key (fallback only) ─────────────────────────────
+# The menu auto-detects this key by parsing ~/.tmux.conf and then tmux list-keys
+# at startup, so you normally do NOT need to set this.
+# Only set it if auto-detection fails (e.g. non-standard tmux.conf location or
+# the bind-key line uses an unsupported format).
+# Must match the bind-key line in your tmux.conf that runs switch-client -t main.
 MENU_KEY=m

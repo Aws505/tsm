@@ -25,6 +25,54 @@ elif [ -f "$_conf_proj" ]; then
     source "$_conf_proj"
 fi
 
+# ── Detect menu session key from tmux config ──────────────────────────────────
+# Finds the prefix+key bound to 'switch-client -t main' (simple switch, not the
+# send-Enter variant).  Resolution order:
+#   1. ~/.tmux.conf and any source-file it includes (one level deep) — file-based,
+#      works offline, authoritative for most setups
+#   2. tmux list-keys — live config, picks up runtime overrides and %include'd files
+#   3. MENU_KEY from sessions.conf (default: m) — explicit override / last resort
+_resolve_menu_key() {
+    local key cfg="${HOME}/.tmux.conf"
+    # awk program shared for both the top-level file and any source-file targets:
+    # Matches: bind-key [-r] KEY run-shell '... switch-client -t main ... tmux display ...'
+    # Extracts: first single-character, non-flag token after "bind-key".
+    local awk_prog='
+        /bind-key/ && /switch-client/ && /-t main/ && /tmux display/ {
+            for (i = 2; i <= NF; i++) {
+                if ($i !~ /^-/ && length($i) == 1) { print $i; exit }
+            }
+        }'
+
+    # 1. Parse ~/.tmux.conf; follow source-file / source directives one level deep.
+    if [ -f "$cfg" ]; then
+        key=$(awk "$awk_prog" "$cfg")
+        if [ -z "$key" ]; then
+            local src_path
+            while IFS= read -r src_path; do
+                src_path="${src_path/#\~/$HOME}"          # expand leading ~
+                [ -f "$src_path" ] || continue
+                key=$(awk "$awk_prog" "$src_path")
+                [ -n "$key" ] && break
+            done < <(awk '/^source(-file)?[[:space:]]/ {
+                             gsub(/["\x27]/, "", $NF); print $NF }' "$cfg")
+        fi
+    fi
+
+    # 2. Fall back to live tmux key table (handles %include and runtime overrides).
+    #    Line form: bind-key -T prefix KEY run-shell ...
+    if [ -z "$key" ]; then
+        key=$(tmux list-keys 2>/dev/null | \
+              awk '$3 == "prefix" && /switch-client/ && /-t main/ && /tmux display/ \
+                   { print $4; exit }')
+    fi
+
+    # 3. Fall back to sessions.conf MENU_KEY, then hard-coded default.
+    printf '%s' "${key:-${MENU_KEY:-m}}"
+}
+MENU_KEY=$(_resolve_menu_key)
+unset -f _resolve_menu_key
+
 # ── IP address display ────────────────────────────────────────────────────────
 # Returns a formatted string of "iface IP" pairs for each interface in SHOW_IPS.
 # Interfaces without an IPv4 address are shown as "down".
