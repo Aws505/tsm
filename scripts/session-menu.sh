@@ -13,7 +13,7 @@ LABELS=( "Project workspace" "Claude" "Codex" "Relay" "Share" "General shell" )
 KEYS=( e d x r h o )
 SHOW_IPS=()
 
-_conf_user="$HOME/.config/tmsm/sessions.conf"
+_conf_user="$HOME/.config/tsm/sessions.conf"
 _conf_proj="$(dirname "$SCRIPT_DIR")/conf/sessions.conf"
 
 if [ -f "$_conf_user" ]; then

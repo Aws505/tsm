@@ -20,7 +20,7 @@ DIRS=( "$HOME/Projects" "$HOME/Projects" "$HOME/Projects" "$HOME" "$HOME" "$HOME
 INIT_CMDS=( "" "claude" "codex" "" "" "" )
 SESSION_ENVS=( "" "" "CODEX_DISABLE_SANDBOX=1" "" "" "" )
 
-_conf_user="$HOME/.config/tmsm/sessions.conf"
+_conf_user="$HOME/.config/tsm/sessions.conf"
 _conf_proj="$(dirname "$SCRIPT_DIR")/conf/sessions.conf"
 
 if [ -f "$_conf_user" ]; then

@@ -1,6 +1,6 @@
 # AGENTS — tmux Session Manager
 
-This repo is a self-contained tmux setup (`tmsm`) that auto-attaches SSH sessions to named persistent workspaces and provides an interactive session switcher.
+This repo is a self-contained tmux setup (`tsm`) that auto-attaches SSH sessions to named persistent workspaces and provides an interactive session switcher.
 
 ---
 
@@ -34,7 +34,7 @@ SESSION_ENVS=( ... )  # space-separated KEY=VALUE env vars applied at session cr
 SHOW_IPS=( ... )      # interface names whose IPv4 addresses appear in the menu header
 ```
 
-A user override (not tracked in git) can be placed at `~/.config/tmsm/sessions.conf`.
+A user override (not tracked in git) can be placed at `~/.config/tsm/sessions.conf`.
 
 ### INIT_CMDS values
 
@@ -63,7 +63,7 @@ The `codex` session sets `CODEX_DISABLE_SANDBOX=1` so that Codex always has outb
 | `scripts/start-sessions.sh` | Creates any missing sessions; sourced by ssh-attach and tmsm |
 | `scripts/session-menu.sh` | Interactive arrow-key menu running in the `main` session |
 | `scripts/ssh-attach.sh` | Called from `~/.bashrc` on SSH login to auto-attach tmux |
-| `scripts/tmsm.sh` | Installed as `~/.local/bin/tmsm`; the user-facing launcher |
+| `scripts/tmsm.sh` | Installed as `~/.local/bin/tsm`; the user-facing launcher |
 | `install.sh` | One-time idempotent setup script |
 
 ---
@@ -81,7 +81,7 @@ The `codex` session sets `CODEX_DISABLE_SANDBOX=1` so that Codex always has outb
 ## Installation
 
 ```bash
-bash ~/Projects/tmux/install.sh
+bash ~/Projects/tsm/install.sh
 ```
 
 Idempotent — safe to re-run. Sets up `~/.tmux.conf`, adds the SSH hook to `~/.bashrc`, starts all sessions, and reloads a live tmux server if present.

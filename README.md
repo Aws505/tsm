@@ -154,7 +154,7 @@ This is read from the same `sessions.conf` as all other settings — set it in y
 To override config without touching the repo, copy to:
 
 ```bash
-~/.config/tmsm/sessions.conf
+~/.config/tsm/sessions.conf
 ```
 
 This file takes precedence over `conf/sessions.conf` and is never touched by the installer.
