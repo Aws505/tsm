@@ -1,75 +1,111 @@
 # TSM — TMUX Session Manager
 
-A self-contained tmux workspace manager built for SSH-first, always-on development. Define your sessions in one config file; every SSH login — including from a phone — drops you straight into a live, named workspace with an interactive switcher menu. No Ruby, Python, or fzf required: just bash and tmux.
+TSM is a tmux launcher for a small, fixed set of persistent named workspaces. It is built for SSH-first use: on login, it can start missing sessions, attach you to a dedicated `main` launcher session, and give you an interactive session menu that works well from a laptop or a phone.
+
+It is intentionally simple. Sessions are defined with Bash arrays in one config file, startup commands are shell strings, and tmux remains the only major runtime dependency.
 
 ---
 
-## Why TSM?
+## What TSM Actually Does
 
-Tools like [tmuxinator](https://github.com/tmux-plugins/tmuxinator) and [tmuxp](https://github.com/tmux-plugins/tmuxp) are excellent at defining complex multi-pane layouts for individual projects. [tmux-sessionizer](https://github.com/ThePrimeagen/tmux-sessionizer) is great for fuzzy-jumping between project directories. [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) saves and restores whatever sessions happen to be running.
+TSM is not a project-layout generator. It is a session bootstrapper and switcher for always-on shells.
 
-TSM is none of those things. It targets a different problem: **persistent, named workspaces that survive disconnects and greet you automatically on every SSH login**, with a built-in menu as the primary interface.
+What it does well:
+- Starts a known set of tmux sessions if they do not exist yet
+- Auto-attaches SSH logins into tmux through `~/.bashrc`
+- Keeps a dedicated `main` session whose `menu` window runs an interactive selector
+- Lets each session define a working directory, startup command, and environment variables
+- Supports direct key-based switching between sessions with `Prefix + <key>`
 
-| | TSM | tmuxinator / tmuxp | tmux-sessionizer | tmux-resurrect |
-|---|---|---|---|---|
-| SSH auto-attach on login | **✓ built-in** | ✗ | ✗ | ✗ |
-| Interactive session menu | **✓ built-in** | ✗ (type the name) | ✓ fzf popup | ✗ |
-| All sessions in one config | **✓** | ✗ per-project files | ✗ | ✗ |
-| Zero dependencies | **✓ pure bash** | ✗ Ruby / Python | ✗ needs fzf | ✓ |
-| Per-session env vars | **✓** | partial (ERB / `${}`) | ✗ | ✗ |
-| Multi-pane / window layouts | ✗ | ✓ | ✗ | saves live state |
-| Fuzzy directory search | ✗ | ✗ | ✓ | ✗ |
-| Save & restore across reboots | ✗ | ✗ | ✗ | ✓ |
+What it does not do:
+- Define complex pane/window layouts per project
+- Restore sessions after a machine reboot
+- Generate tmux bindings automatically from `sessions.conf`
+- Target non-Linux environments particularly well
 
-**TSM works best when you want:**
-- A fixed set of named workspaces (code, AI agent, shell, relay…) that are always running
-- Every SSH login — from any client, including a phone — to land in the right place automatically
-- Session startup commands (launch an AI agent, a dev server, set env vars) without writing a separate config file per session
-- No runtime dependencies beyond tmux itself
-
-**Reach for tmuxinator/tmuxp instead** if you need precise multi-window, multi-pane layouts per project.
-**Reach for tmux-sessionizer** if you jump between many project directories and want fuzzy search.
-**Pair with tmux-resurrect** if you need sessions to survive a server reboot.
+If you need multi-pane project layouts, use `tmuxinator` or `tmuxp`. If you need reboot persistence, pair this with `tmux-resurrect`.
 
 ---
 
-## Features
+## Feature Set
 
-- **SSH auto-attach** — every login lands in `main` automatically; no manual `tmux attach` ever
-- **Dedicated launcher session** — `main` runs nothing but the menu, always ready as your home base
-- **Single config file** — all sessions defined in one `conf/sessions.conf`; gitignored so each user keeps their own without forking the repo
-- **Auto-launch** — sessions start AI agents, dev servers, or any shell command on creation
-- **Per-session env vars** — `SESSION_ENVS` injects variables before the startup command runs, applied to the whole session so every future pane inherits them
-- **Zero dependencies** — pure bash and tmux; works on any minimal SSH server
-- **Phone-friendly** — `Ctrl+a` prefix, mouse enabled, status bar at top, `Alt+Arrow` pane nav
+These features are implemented in the current repo:
+
+- Dedicated launcher session: `main` is created separately from your work sessions and keeps a persistent shell plus a `menu` window.
+- Interactive menu: `scripts/session-menu.sh` renders a full-screen selector with arrow-key navigation, numeric shortcuts, live session status, a tmux cheat sheet, and a destructive `kill all` confirmation flow.
+- SSH auto-attach: `install.sh` appends a guarded block to `~/.bashrc` so interactive SSH logins run `tsm`.
+- Session bootstrap: `scripts/start-sessions.sh` creates missing sessions from config and leaves existing ones alone.
+- Session-local startup behavior: each configured session can start as a plain shell, run `auto`, launch `claude`, launch `codex`, or run an arbitrary shell command.
+- Session environment injection: `SESSION_ENVS` values are applied with `tmux set-environment` and exported into the initial shell window before the startup command runs.
+- Optional IP display: the menu header can show IPv4 addresses for configured interfaces in `SHOW_IPS`.
+- Menu key autodetection: the menu tries to discover the `main` quick-switch key from `~/.tmux.conf`, sourced tmux files, or `tmux list-keys`, then falls back to `MENU_KEY`.
+- In-session launcher behavior: running `tsm` inside tmux recreates the `main:menu` window if it was closed and switches the client there.
+- Direct session switching bindings: the default tmux config binds `Prefix + m/e/d/x/r/h/o` to named sessions.
+- Mobile-oriented tmux defaults: `Ctrl+a` prefix, top status bar, mouse support, `Alt+Arrow` pane navigation, and simple split bindings.
+- Installer migration logic: `install.sh` migrates older `tmsm` references in `~/.bashrc` and removes a legacy `~/.local/bin/tmsm` symlink if present.
+- CLI help and introspection: `tsm help` and `tsm list` document the active configuration without needing a live tmux connection.
+
+---
+
+## Dependencies
+
+TSM no longer honestly qualifies as "zero dependencies." The dependency footprint is still small, but it is real and worth documenting.
+
+### Required
+
+- `bash`
+- `tmux`
+- Standard shell utilities used throughout the scripts: `awk`, `grep`, `sed`, `readlink`, `date`, `wc`, `chmod`, `ln`, `cp`, `mkdir`, `rm`
+
+### Optional
+
+- `ip` from `iproute2`
+  Used by the menu only when `SHOW_IPS` is configured.
+- `claude`
+  Used when `INIT_CMDS` is `claude` or when `INIT_CMDS=auto` and `claude` is available.
+- `aider`
+  Used when `INIT_CMDS=auto` and `claude` is not available.
+- `codex`
+  Used when `INIT_CMDS` is `codex`.
+
+### Platform assumptions
+
+The scripts are Linux-first. Current implementation details rely on:
+
+- `readlink -f`
+- `sed -i`
+- `ip -4 addr show`
+- A typical `~/.bashrc` + SSH login shell flow
+
+That means the repo is well suited to Linux VPS and homelab use, but not currently packaged as a portable cross-platform tmux tool.
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Clone wherever you like
-git clone <repo-url> ~/tsm
-cd ~/tsm
-
-# 2. Copy the example config and customise your sessions
-cp conf/sessions.conf.example conf/sessions.conf
-$EDITOR conf/sessions.conf
-
-# 3. Run the installer (idempotent — safe to re-run)
+git clone <repo-url> ~/Projects/tsm
+cd ~/Projects/tsm
 bash install.sh
 ```
 
-The installer:
-1. Verifies `tmux` is installed
-2. Makes all scripts executable
-3. Writes `~/.tmux.conf` to source `conf/tmux.conf` (backs up any existing config)
-4. Installs `tsm` to `~/.local/bin/tsm`
-5. Appends the SSH auto-attach hook to `~/.bashrc`
-6. Starts all configured sessions
-7. Reloads a running tmux server if one is active
+On first run, the installer will offer to copy:
 
-Then reload your shell and you're running:
+- `conf/sessions.conf.example` -> `conf/sessions.conf`
+- `conf/tmux.conf.example` -> `conf/tmux.conf`
+
+Then it:
+
+1. Checks for `tmux`
+2. Makes the scripts executable
+3. Installs `~/.tmux.conf` as a thin file that sources this repo's `conf/tmux.conf`
+4. Installs `tsm` as `~/.local/bin/tsm`
+5. Ensures `~/.local/bin` is on your `PATH`
+6. Appends the SSH auto-attach hook to `~/.bashrc`
+7. Starts all configured sessions
+8. Reloads a live tmux server if one is already running
+
+After install:
 
 ```bash
 source ~/.bashrc
@@ -78,252 +114,291 @@ tsm
 
 ---
 
-## Configuration
+## CLI
 
-All session definitions live in **`conf/sessions.conf`**. It is gitignored — `conf/sessions.conf.example` is the version-controlled template.
-
-The six arrays are index-aligned: the same position across all arrays defines one session. There is also one scalar setting for IP display.
+`tsm` now has a small command surface:
 
 ```bash
-SESSIONS=( code dev other )
-LABELS=(   "Project workspace" "AI developer" "General shell" )
-KEYS=(     e d o )
-DIRS=(     "$HOME/Projects" "$HOME/Projects" "$HOME" )
-INIT_CMDS=( "" "auto" "" )
-SESSION_ENVS=( "" "" "" )
-
-# Optional: show IPv4 addresses in the menu header
-SHOW_IPS=( wlan0 tailscale0 )
+tsm
+tsm menu
+tsm start [all|main|SESSION]
+tsm attach [SESSION]
+tsm list
+tsm help
 ```
 
-### `INIT_CMDS` — startup behaviour
+Behavior:
 
-| Value | Behaviour |
-|-------|-----------|
-| `""` | Plain shell, nothing sent |
-| `"auto"` | Auto-detects `claude` then `aider`; launches whichever is found |
-| `"claude"` | Explicitly launches Claude Code |
-| `"codex"` | Explicitly launches OpenAI Codex |
-| any string | Sent verbatim to the shell — e.g. `"npm run dev"` |
+- `tsm` or `tsm menu`
+  Outside tmux: starts all configured sessions and attaches to `main`
+  Inside tmux: ensures `main` and `main:menu` exist, then switches to that window
+- `tsm start`
+  Creates missing sessions without attaching
+- `tsm attach`
+  Attaches or switches directly to a named tmux session
+- `tsm list`
+  Prints the active config source plus session names, keys, labels, startup commands, directories, and environment variables
+- `tsm help`
+  Shows usage, behavior, dependency notes, and active file paths
 
-Override the auto-detected AI tool without editing the config:
+---
+
+## Configuration
+
+The main config file is [`conf/sessions.conf`](/mnt/seagate/Projects/2026/tsm/conf/sessions.conf). A user-local override at `~/.config/tsm/sessions.conf` takes precedence if present.
+
+The arrays are index-aligned: entry `i` in each array describes one session.
+
+```bash
+SESSIONS=( code dev codex relay share other )
+LABELS=( "Project workspace" "Claude" "Codex" "Relay" "Share" "General shell" )
+KEYS=( e d x r h o )
+DIRS=( "$HOME/Projects" "$HOME/Projects" "$HOME/Projects" "$HOME" "$HOME" "$HOME" )
+INIT_CMDS=( "" "claude" "codex" "" "" "" )
+SESSION_ENVS=( "" "" "CODEX_DISABLE_SANDBOX=1" "" "" "" )
+SHOW_IPS=( wlan0 tailscale0 )
+MENU_KEY=m
+```
+
+### `INIT_CMDS`
+
+| Value | Behavior |
+|---|---|
+| `""` | Starts with a plain shell in the first window and creates a second `shell` window |
+| `"auto"` | Uses `DEV_AI_CMD` if set, otherwise `claude`, otherwise `aider`, otherwise prints a warning in the window |
+| `"claude"` | Sends `claude` into the first window and creates a second `shell` window |
+| `"codex"` | Sends `codex` into the first window and creates a second `shell` window |
+| any other string | Sends that string verbatim into the first window and creates a second `shell` window |
+
+For `auto`, you can override the detected AI command:
 
 ```bash
 export DEV_AI_CMD="aider --model gpt-4o"
 ```
 
-### `SESSION_ENVS` — per-session environment variables
+### `SESSION_ENVS`
 
-Space-separated `KEY=VALUE` pairs injected when a session is first created. Applied to tmux's environment table (so all future panes/windows in that session inherit them) and exported into the initial shell before `INIT_CMD` runs.
+Each string is split on spaces and treated as `KEY=VALUE` pairs.
 
-```bash
-# Disable network sandbox for an AI agent session
-SESSION_ENVS=( "" "CODEX_DISABLE_SANDBOX=1" "" )
-
-# Multiple vars, space-separated
-SESSION_ENVS=( "" "NODE_ENV=development PORT=3000" "" )
-```
-
-### `SHOW_IPS` — IP addresses in the menu header
-
-An optional array of network interface names. When set, each interface's IPv4 address is displayed on the menu header line after the current time. Interfaces with no address show as `down`.
+Example:
 
 ```bash
-SHOW_IPS=( wlan0 tailscale0 )   # wifi + Tailscale VPN
-SHOW_IPS=( eth0 )               # single wired interface
-SHOW_IPS=()                     # disabled (default)
+SESSION_ENVS=(
+  ""
+  "NODE_ENV=development PORT=3000"
+  "CODEX_DISABLE_SANDBOX=1"
+  ""
+  ""
+  ""
+)
 ```
 
-This is read from the same `sessions.conf` as all other settings — set it in your personal config to keep it out of version control.
+These are applied in two places:
 
-### Adding a session
+- tmux's session environment table, so future panes and windows inherit them
+- the initial shell window, before the startup command runs
 
-1. Append one entry to each array in `conf/sessions.conf`
-2. Add a bind-key line in `conf/tmux.conf`:
-   ```
-   bind-key <letter> run-shell 'tmux switch-client -t <name> 2>/dev/null || tmux display "<name> not running"'
-   ```
-3. Update the `status-right` string in `conf/tmux.conf` to include the new hint
-4. Reload: `tmux source-file ~/.tmux.conf`
-5. Start: `tsm` (or `bash scripts/start-sessions.sh <name>`)
+### `SHOW_IPS`
 
-**Reserved keys** (already bound in `conf/tmux.conf`): `m` `s` `S` `H` `J` `K` `L` `v` `c` `|` `-`
+If `SHOW_IPS` is non-empty, the menu header prints each interface name and its IPv4 address. Interfaces with no IPv4 address render as `down`.
 
-### User-local override
+### Session additions
 
-To override config without touching the repo, copy to:
+Adding a session still requires changes in two places:
 
-```bash
-~/.config/tsm/sessions.conf
-```
+1. Add entries to every aligned array in [`conf/sessions.conf`](/mnt/seagate/Projects/2026/tsm/conf/sessions.conf)
+2. Add a matching `bind-key` line and status hint in [`conf/tmux.conf`](/mnt/seagate/Projects/2026/tsm/conf/tmux.conf)
 
-This file takes precedence over `conf/sessions.conf` and is never touched by the installer.
+That manual duplication is one of the clearest future improvement areas.
 
 ---
 
-## Session Menu
+## Interactive Menu
 
-The `main` session runs a continuous interactive menu (`session-menu.sh`):
+The `main` session's `menu` window runs [`scripts/session-menu.sh`](/mnt/seagate/Projects/2026/tsm/scripts/session-menu.sh).
 
-```
-┌──────────────────────────────────────────┐
-│         TMUX SESSION MANAGER             │
-└──────────────────────────────────────────┘
-  current: main  14:32
-  wlan0 192.168.1.42  ·  tailscale0 100.100.0.1
+Implemented menu behavior:
 
-  ▶ [1] code      Project workspace        idle
-    [2] dev        AI developer             active (1)
-    [3] other      General shell            stopped
+- Arrow keys move the selection
+- `Enter` switches to the selected session
+- Number keys jump directly to sessions `1-9`
+- Selecting a stopped session starts it first through `start-sessions.sh`
+- `r` refreshes the display
+- `s` starts all configured sessions
+- `q` exits the menu loop but leaves the `main` session alive
+- `k` opens a typed confirmation flow and can kill `main` plus every configured session
+- The display auto-refreshes every 30 seconds by timing out the key read loop
+- A tmux cheat sheet is printed at the bottom of the screen
 
-  ──────────────────────────────────────────
-  ↑/↓  navigate     Enter/[num]  select
-  [r]  refresh  [s] start all  [q]  quit
-  [k]  kill ALL sessions and exit
-```
+The menu also shows per-session status:
 
-- **Arrow keys** or **number keys** to navigate and select
-- Selecting a stopped session starts it before switching
-- Status badges refresh on each keypress and every 30 seconds automatically
-- `q` exits the menu loop but leaves `main` alive; run `tsm` to reopen it
-- `k` prompts for confirmation then kills all sessions
+- `stopped`
+- `idle`
+- `active (N)` where `N` is the number of attached clients in that session
 
 ---
 
-## Key Bindings
+## tmux Key Bindings
 
-The prefix is **`Ctrl+a`** (reachable on every mobile keyboard).
-
-### Session navigation
+Defaults from [`conf/tmux.conf`](/mnt/seagate/Projects/2026/tsm/conf/tmux.conf):
 
 | Keys | Action |
-|------|--------|
-| `Prefix` + `m` | Switch to **main** (session menu) |
-| `Prefix` + `e` | Switch to **code** |
-| `Prefix` + `d` | Switch to **dev** |
-| `Prefix` + `x` | Switch to **codex** |
-| `Prefix` + `r` | Switch to **relay** |
-| `Prefix` + `h` | Switch to **share** |
-| `Prefix` + `o` | Switch to **other** |
-| `Prefix` + `s` | Full visual session/window chooser |
-| `Prefix` + `S` | Jump to the session menu in `main` |
-
-Session keys are defined in `conf/sessions.conf` (`KEYS` array) and mirrored as bind-keys in `conf/tmux.conf`.
-
-### Pane and window management
-
-| Keys | Action |
-|------|--------|
-| `Alt` + Arrow | Move between panes (no prefix needed) |
-| `Prefix` + `\|` | Split pane horizontally |
-| `Prefix` + `-` | Split pane vertically |
-| `Prefix` + `H/J/K/L` | Resize pane |
-| `Prefix` + `c` | New window (opens in current path) |
-| `Prefix` + `n` | Next window |
-| `Prefix` + `l` | Last (most recently used) window |
-| `Prefix` + `p` | Previous window |
-
-### Copy mode
-
-| Keys | Action |
-|------|--------|
-| `Prefix` + `v` | Enter copy mode |
-| `v` (in copy mode) | Begin selection |
-| `y` (in copy mode) | Yank selection and exit |
+|---|---|
+| `Ctrl+a` | Prefix |
+| `Prefix + m` | Switch to `main` |
+| `Prefix + e` | Switch to `code` |
+| `Prefix + d` | Switch to `dev` |
+| `Prefix + x` | Switch to `codex` |
+| `Prefix + r` | Switch to `relay` |
+| `Prefix + h` | Switch to `share` |
+| `Prefix + o` | Switch to `other` |
+| `Prefix + s` | Built-in tmux session/window chooser |
+| `Prefix + S` | Jump to the TSM menu in `main` |
+| `Alt + Arrow` | Pane navigation without prefix |
+| `Prefix + H/J/K/L` | Resize pane |
+| `Prefix + |` | Horizontal split |
+| `Prefix + -` | Vertical split |
+| `Prefix + c` | New window in current path |
+| `Prefix + n/l/p` | Next, last, previous window |
+| `Prefix + v` | Enter copy mode |
+| `v` then `y` in copy mode | Select and yank |
 
 ---
 
 ## Session Flow
 
-```
-SSH login (or running `tsm` from any shell)
-    │
-    ▼
-~/.bashrc detects SSH_CONNECTION + no existing $TMUX
-    │
-    ▼
-tsm → start-sessions.sh all
-    │   Creates any missing sessions, runs their INIT_CMDs,
-    │   and applies SESSION_ENVS — then leaves them all detached.
-    │
-    └── tmux attach-session -t main
-            │
-            ▼
-        ┌─────────────────────────────────────┐
-        │  main  (dedicated launcher session) │
-        │  window: menu — session-menu.sh     │◄─── Prefix+m from anywhere
-        └─────────────────────────────────────┘
-                │
-                │  switch-client (terminal moves; main stays alive)
-                ├──────────────────► code   (your project workspace)
-                ├──────────────────► dev    (AI agent, auto-launched)
-                └──────────────────► other  (general shell)
+```text
+SSH login
+  -> ~/.bashrc sees SSH_CONNECTION and no TMUX
+  -> tsm
+  -> start-sessions.sh all
+  -> tmux attach-session -t main
+  -> main:menu
+  -> switch-client to a work session
 ```
 
-`main` is never used for real work — its only job is to run the menu and act as a stable home base. `switch-client` moves your terminal to the target session without detaching or killing anything. `Prefix + m` jumps back to the menu from any session.
+Inside tmux, `tsm` does not attach again. It repairs `main:menu` if needed and switches the existing client there.
 
 ---
 
 ## Project Structure
 
-```
+```text
 tsm/
-├── install.sh                   # Idempotent setup — run once after cloning
+├── install.sh
 ├── conf/
-│   ├── sessions.conf.example    # Committed template — copy to sessions.conf
-│   ├── sessions.conf            # Your config — gitignored, edit freely
-│   └── tmux.conf                # Full tmux configuration
+│   ├── sessions.conf
+│   ├── sessions.conf.example
+│   ├── tmux.conf
+│   └── tmux.conf.example
 ├── scripts/
-│   ├── start-sessions.sh        # Creates any missing sessions
-│   ├── session-menu.sh          # Interactive session switcher (runs in 'main')
-│   ├── ssh-attach.sh            # Auto-attach hook sourced by ~/.bashrc
-│   └── tmsm.sh                  # Installed as ~/.local/bin/tsm
+│   ├── session-menu.sh
+│   ├── ssh-attach.sh
+│   ├── start-sessions.sh
+│   └── tmsm.sh
 ├── snippets/
-│   ├── bashrc.snippet           # The block appended to ~/.bashrc
-│   └── terminus-tips.md         # Phone terminal setup guide
+│   ├── bashrc.snippet
+│   └── terminus-tips.md
 └── tests/
     └── test_install.sh
 ```
 
+Key files:
+
+- [`install.sh`](/mnt/seagate/Projects/2026/tsm/install.sh): idempotent installer and `~/.bashrc` patcher
+- [`scripts/tmsm.sh`](/mnt/seagate/Projects/2026/tsm/scripts/tmsm.sh): user-facing `tsm` launcher
+- [`scripts/start-sessions.sh`](/mnt/seagate/Projects/2026/tsm/scripts/start-sessions.sh): session creation logic
+- [`scripts/session-menu.sh`](/mnt/seagate/Projects/2026/tsm/scripts/session-menu.sh): interactive selector UI
+- [`scripts/ssh-attach.sh`](/mnt/seagate/Projects/2026/tsm/scripts/ssh-attach.sh): SSH-only attach wrapper
+
 ---
 
-## Phone Setup (Terminus)
+## Testing
 
-See `snippets/terminus-tips.md` for the full guide. Key points:
+Basic validation in this repo is currently shell-script focused:
 
-- **Font**: JetBrains Mono or Fira Code (needed for box-drawing characters in the menu)
-- **Keyboard toolbar**: enable the extended row; add `Ctrl`, `Alt`, `Esc`, `Tab`
-- **Status bar at top** so the phone keyboard doesn't cover it
-- **Mouse enabled** — tap any pane or window tab to focus it
-- **`Alt` + Arrow** navigates panes without the prefix, which matters when `Ctrl` is tucked away
+```bash
+bash -n scripts/*.sh install.sh tests/test_install.sh
+bash tests/test_install.sh
+```
+
+`tests/test_install.sh` checks:
+
+- the `~/.local/bin/tsm` symlink
+- script executability
+- `.bashrc` markers
+- local config files
+- `~/.tmux.conf` management markers
+
+It is an install smoke test, not a full behavior test suite.
+
+---
+
+## Known Gaps
+
+- Session bindings are duplicated across `sessions.conf` and `tmux.conf`
+- There is no automated check that those two files stay in sync
+- The project is Linux-centric and not packaged for macOS or BSD tmux setups
+- There are no menu interaction tests or session lifecycle integration tests
+- Installer/tests mostly validate file presence and markers, not end-to-end tmux behavior
+
+---
+
+## Highest-Value Expansion Areas
+
+These are the highest opportunity areas I see after exploring the repo:
+
+1. Generate tmux bindings and status hints from `sessions.conf`
+   Right now session metadata is declared once in [`conf/sessions.conf`](/mnt/seagate/Projects/2026/tsm/conf/sessions.conf) and again manually in [`conf/tmux.conf`](/mnt/seagate/Projects/2026/tsm/conf/tmux.conf). That is the biggest maintainability risk and the most obvious source of drift.
+
+2. Add real integration tests around tmux behavior
+   The current test script mostly verifies install artifacts. The project would benefit from scripted checks for session creation, menu window recreation, env propagation, and config override precedence.
+
+3. Improve portability and dependency hardening
+   If you want TSM to be broadly reusable, the next step is either embracing Linux explicitly in the docs and packaging, or abstracting the Linux-specific commands and shell assumptions so the tool works on macOS/BSD too.
+
+4. Expand the CLI into a true control surface
+   `tsm help` and `tsm list` now make the launcher easier to understand, but there is room for `tsm status`, `tsm validate`, and `tsm doctor` commands that explain drift, missing binaries, and bad config before a user hits tmux errors.
 
 ---
 
 ## Troubleshooting
 
-**Sessions are gone after a reboot.**
-tmux sessions don't survive a server restart. Re-run:
+### Sessions disappeared after reboot
+
+tmux sessions do not survive a host restart by themselves.
+
 ```bash
 tsm
 ```
-Or install [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) for automatic persistence.
 
-**The menu loop isn't running in `main`.**
+If reboot persistence matters, pair this with `tmux-resurrect`.
+
+### The menu window closed
+
+Run:
+
 ```bash
-tmux send-keys -t main "tsm" Enter
+tsm
 ```
 
-**SSH login drops to a plain shell instead of tmux.**
-Check that `~/.bashrc` contains the hook (search for `# tsm: SSH auto-attach`) and that your SSH client starts an interactive login shell.
+Inside tmux, that recreates `main:menu` if needed and switches you back to it.
 
-**`~/.tmux.conf` changes aren't reflected.**
-```bash
-tmux source-file ~/.tmux.conf
-```
+### SSH logins are not auto-attaching
 
-**A session won't start.**
+Check `~/.bashrc` for the `# tsm: SSH auto-attach` block and confirm your SSH session starts an interactive Bash shell.
+
+### A session definition changed but tmux still has the old one
+
+Kill and recreate that session:
+
 ```bash
-# Kill and recreate a single session
 tmux kill-session -t <name>
 bash scripts/start-sessions.sh <name>
+```
+
+### tmux config edits are not live yet
+
+```bash
+tmux source-file ~/.tmux.conf
 ```

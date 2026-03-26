@@ -29,7 +29,7 @@ else
 fi
 
 # ── 2. Symlink points to tmsm.sh ──────────────────────────────────────────────
-EXPECTED_TARGET="$SCRIPT_DIR/scripts/tmsm.sh"
+EXPECTED_TARGET="$(readlink -f "$SCRIPT_DIR/scripts/tmsm.sh" 2>/dev/null || printf '%s' "$SCRIPT_DIR/scripts/tmsm.sh")"
 ACTUAL_TARGET="$(readlink -f "$TSM_LINK" 2>/dev/null)"
 if [ "$ACTUAL_TARGET" = "$EXPECTED_TARGET" ]; then
     pass "tsm symlink points to scripts/tmsm.sh"
@@ -49,6 +49,22 @@ if command -v tsm &>/dev/null; then
     pass "'tsm' is on PATH ($(command -v tsm))"
 else
     fail "'tsm' not found on PATH — ensure ~/.local/bin is in PATH (source ~/.bashrc)"
+fi
+
+# ── 4b. tsm help works without a live tmux client ────────────────────────────
+HELP_OUTPUT="$(bash "$SCRIPT_DIR/scripts/tmsm.sh" --help 2>/dev/null || true)"
+if printf '%s\n' "$HELP_OUTPUT" | grep -q "Usage:"; then
+    pass "tsm --help prints usage"
+else
+    fail "tsm --help did not print expected usage text"
+fi
+
+# ── 4c. tsm list reads the active config ─────────────────────────────────────
+LIST_OUTPUT="$(bash "$SCRIPT_DIR/scripts/tmsm.sh" list 2>/dev/null || true)"
+if printf '%s\n' "$LIST_OUTPUT" | grep -q "Configured sessions:"; then
+    pass "tsm list prints configured sessions"
+else
+    fail "tsm list did not print configured sessions"
 fi
 
 # ── 5. Old tmsm symlink has been removed ──────────────────────────────────────
