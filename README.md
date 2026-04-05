@@ -20,7 +20,7 @@ What it does well:
 What it does not do:
 - Define complex pane/window layouts per project
 - Restore sessions after a machine reboot
-- Generate tmux bindings automatically from `sessions.conf`
+- Persist new keybindings to `conf/tmux.conf` automatically (live bindings are synced; file edits are still manual)
 - Target non-Linux environments particularly well
 
 If you need multi-pane project layouts, use `tmuxinator` or `tmuxp`. If you need reboot persistence, pair this with `tmux-resurrect`.
@@ -41,6 +41,7 @@ These features are implemented in the current repo:
 - Menu key autodetection: the menu tries to discover the `main` quick-switch key from `~/.tmux.conf`, sourced tmux files, or `tmux list-keys`, then falls back to `MENU_KEY`.
 - In-session launcher behavior: running `tsm` inside tmux recreates the `main:menu` window if it was closed and switches the client there.
 - Direct session switching bindings: the default tmux config binds `Prefix + m/e/d/x/r/h/o` to named sessions.
+- In-menu session management: press `[e]` in the session menu to add new sessions, edit any session's name, label, key binding, working directory, startup command, and environment variables, or delete sessions entirely — no config-file editing required. Changes take effect immediately: live key bindings and the status-bar hint line are updated in the running tmux server, and `sessions.conf` is rewritten for persistence.
 - Mobile-oriented tmux defaults: `Ctrl+a` prefix, top status bar, mouse support, `Alt+Arrow` pane navigation, and simple split bindings.
 - Installer migration logic: `install.sh` migrates older `tmsm` references in `~/.bashrc` and removes a legacy `~/.local/bin/tmsm` symlink if present.
 - CLI help and introspection: `tsm help` and `tsm list` document the active configuration without needing a live tmux connection.
@@ -202,14 +203,41 @@ These are applied in two places:
 
 If `SHOW_IPS` is non-empty, the menu header prints each interface name and its IPv4 address. Interfaces with no IPv4 address render as `down`.
 
-### Session additions
+### Session management
 
-Adding a session still requires changes in two places:
+The preferred way to add, edit, or delete sessions is the interactive menu. Press `[e]` from the session list to open the **Manage Sessions** screen:
 
-1. Add entries to every aligned array in [`conf/sessions.conf`](/mnt/seagate/Projects/2026/tsm/conf/sessions.conf)
-2. Add a matching `bind-key` line and status hint in [`conf/tmux.conf`](/mnt/seagate/Projects/2026/tsm/conf/tmux.conf)
+| Key | Action |
+|-----|--------|
+| `↑` / `↓` | Navigate the session list |
+| `Enter` | Edit the selected session, or add new if on `+ Add new session` |
+| `[a]` | Jump straight to the add-new form |
+| `[d]` | Delete the selected session (requires typing `YES`) |
+| `[q]` | Return to the main menu |
 
-That manual duplication is one of the clearest future improvement areas.
+The add/edit form pre-fills current values. Every field is editable:
+
+| Field | Notes |
+|-------|-------|
+| Session name | Letters, digits, `-`, `_`. Renames the live tmux session if it is running. |
+| Display label | Human-readable name shown in the menu |
+| Quick-switch key | Single character for `Prefix+key`; leave blank for no shortcut |
+| Working directory | `~` is expanded; falls back to `$HOME` if the path does not exist at session creation time |
+| Init command | `""` = plain shell · `auto` · `claude` · `codex` · any shell string |
+| Environment vars | Space-separated `KEY=VALUE` pairs applied at session creation |
+
+**Immediate effect.** After every save the menu:
+
+1. Rewrites `sessions.conf` so the change survives a restart.
+2. Calls `tmux bind-key` / `tmux unbind-key` to sync `Prefix+key` shortcuts in the live server.
+3. Regenerates the status-bar key-hint line via `tmux set-option`.
+4. Offers to start the new session immediately (for adds).
+
+When a session is renamed, the running tmux session is also renamed with `tmux rename-session`.
+
+> **Note on `conf/tmux.conf`:** the menu syncs live key bindings but does not rewrite `conf/tmux.conf`. If you reload the tmux server from scratch (`tmux source-file ~/.tmux.conf`) before the menu script has run, bindings will temporarily revert to whatever is in that file. To make a binding permanent across full server restarts, add the corresponding `bind-key` line to `conf/tmux.conf` as well.
+
+If you prefer to edit files directly, add entries to the aligned arrays in `conf/sessions.conf` and optionally add `bind-key` lines to `conf/tmux.conf`, then run `bash scripts/start-sessions.sh <name>` to create the session.
 
 ---
 
@@ -217,24 +245,40 @@ That manual duplication is one of the clearest future improvement areas.
 
 The `main` session's `menu` window runs [`scripts/session-menu.sh`](/mnt/seagate/Projects/2026/tsm/scripts/session-menu.sh).
 
-Implemented menu behavior:
+**Main menu keys:**
 
-- Arrow keys move the selection
-- `Enter` switches to the selected session
-- Number keys jump directly to sessions `1-9`
-- Selecting a stopped session starts it first through `start-sessions.sh`
-- `r` refreshes the display
-- `s` starts all configured sessions
-- `q` exits the menu loop but leaves the `main` session alive
-- `k` opens a typed confirmation flow and can kill `main` plus every configured session
-- The display auto-refreshes every 30 seconds by timing out the key read loop
-- A tmux cheat sheet is printed at the bottom of the screen
+| Key | Action |
+|-----|--------|
+| `↑` / `↓` | Move selection |
+| `Enter` | Switch to the selected session (starts it first if stopped) |
+| `1`–`9` | Jump directly to session by number |
+| `r` | Refresh the display |
+| `s` | Start all configured sessions |
+| `e` | Open the **Manage Sessions** sub-menu (add / edit / delete) |
+| `q` | Exit the menu loop (leaves `main` alive) |
+| `k` | Typed-confirmation flow to kill every session including `main` |
 
-The menu also shows per-session status:
+The display auto-refreshes every 30 seconds. A tmux cheat sheet is printed at the bottom of the screen.
 
-- `stopped`
-- `idle`
-- `active (N)` where `N` is the number of attached clients in that session
+Per-session status shown next to each entry:
+
+- `stopped` — no tmux session exists
+- `idle` — session exists, no attached clients
+- `active (N)` — `N` clients are attached
+
+**Manage Sessions sub-menu** (`[e]` from the main menu):
+
+| Key | Action |
+|-----|--------|
+| `↑` / `↓` | Navigate the session list |
+| `Enter` | Edit the selected session; add new if on the `+` row |
+| `a` | Open the add-new form directly |
+| `d` | Delete the selected session after typed confirmation |
+| `q` | Return to the main menu |
+
+The add/edit form uses readline-style pre-filled input — existing values appear ready to edit. All six session fields are editable: name, label, quick-switch key, working directory, init command, and environment variables. See [Session management](#session-management) under Configuration for the full field reference.
+
+Changes made through this screen are written to `sessions.conf` and applied to the live tmux server immediately — no restart required.
 
 ---
 
@@ -336,8 +380,8 @@ It is an install smoke test, not a full behavior test suite.
 
 ## Known Gaps
 
-- Session bindings are duplicated across `sessions.conf` and `tmux.conf`
-- There is no automated check that those two files stay in sync
+- `conf/tmux.conf` bind-key lines are not rewritten when sessions are managed via the menu — live bindings are synced, but the file is not. A full tmux server restart before the menu has run will revert to whatever is in that file.
+- There is no automated check that `sessions.conf` and `conf/tmux.conf` stay in sync for persistent bindings
 - The project is Linux-centric and not packaged for macOS or BSD tmux setups
 - There are no menu interaction tests or session lifecycle integration tests
 - Installer/tests mostly validate file presence and markers, not end-to-end tmux behavior
@@ -348,8 +392,8 @@ It is an install smoke test, not a full behavior test suite.
 
 These are the highest opportunity areas I see after exploring the repo:
 
-1. Generate tmux bindings and status hints from `sessions.conf`
-   Right now session metadata is declared once in [`conf/sessions.conf`](/mnt/seagate/Projects/2026/tsm/conf/sessions.conf) and again manually in [`conf/tmux.conf`](/mnt/seagate/Projects/2026/tsm/conf/tmux.conf). That is the biggest maintainability risk and the most obvious source of drift.
+1. Auto-write `conf/tmux.conf` when sessions change
+   Live key bindings and the status-bar hint line are already regenerated from `sessions.conf` whenever a session is added, edited, or deleted. The remaining gap is that `conf/tmux.conf` is not rewritten, so a full tmux server restart before the menu runs will briefly revert to stale bindings. Closing this gap means making `conf/tmux.conf` either fully generated or reduced to only the settings that cannot be set at runtime.
 
 2. Add real integration tests around tmux behavior
    The current test script mostly verifies install artifacts. The project would benefit from scripted checks for session creation, menu window recreation, env propagation, and config override precedence.

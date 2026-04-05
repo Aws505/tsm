@@ -245,9 +245,9 @@ draw_menu() {
 
     printf '\n'
     printf '  \033[90m──────────────────────────────────────────\033[0m\n'
-    printf '  \033[90m↑/↓  navigate     Enter/[num]  select\033[0m\n'
-    printf '  \033[90m[r]  refresh  [s] start all  [q]  quit\033[0m\n'
-    printf '  \033[90m[e]  manage sessions  [k]  kill ALL\033[0m\n'
+    printf '  \033[90m↑/↓  navigate          Enter/[num]  switch\033[0m\n'
+    printf '  \033[90m[r]  refresh    [s]  start all    [q]  quit\033[0m\n'
+    printf '  \033[90m[e]  add/edit/delete sessions     [k]  kill ALL\033[0m\n'
     printf '\n'
     printf '  \033[90m──────────────────────────────────────────\033[0m\n'
     printf '  \033[1;34mtmux cheat sheet\033[90m  prefix: \033[1;33m^a\033[90m (C-a)\033[0m\n'
