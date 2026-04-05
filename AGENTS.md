@@ -1,6 +1,6 @@
 # AGENTS — tmux Session Manager
 
-This repo is a self-contained tmux setup (`tsm`) that auto-attaches SSH sessions to named persistent workspaces and provides an interactive session switcher.
+This repo is a self-contained tmux setup (`tsm`) that auto-attaches SSH sessions to named persistent workspaces and provides an interactive session switcher with built-in session management.
 
 ---
 
@@ -55,27 +55,65 @@ The `codex` session sets `CODEX_DISABLE_SANDBOX=1` so that Codex always has outb
 
 ---
 
+## Managing Sessions from the Menu
+
+Press **`[e]`** in the main menu to open the **Manage Sessions** sub-menu. From there you can:
+
+| Action | How |
+|--------|-----|
+| **Add** a new session | Select `+ Add new session` (bottom of list) and press Enter, or press `[a]` from anywhere in the manage menu |
+| **Edit** a session | Navigate to it and press Enter |
+| **Delete** a session | Navigate to it and press `[d]`, then type `YES` to confirm |
+
+### What you can edit
+
+Each session has six fields:
+
+| Field | Description |
+|-------|-------------|
+| Session name | Internal tmux identifier (letters, digits, `-`, `_`). Renames the live tmux session automatically. |
+| Display label | Human-readable name shown in the menu |
+| Quick-switch key | Single character for `Prefix+key` switching. Blank = no shortcut. |
+| Working directory | Starting directory (`~` is expanded). Falls back to `$HOME` if the path doesn't exist. |
+| Init command | What to run on session start (`""` = shell, `auto`, `claude`, `codex`, or any command) |
+| Environment vars | Space-separated `KEY=VALUE` pairs applied at session creation |
+
+### Immediate effect
+
+Changes take effect **instantly** without restarting tsm:
+
+- The session list in the main menu updates immediately.
+- `Prefix+key` shortcuts are re-bound in the live tmux server.
+- The tmux status-bar key-hint line is regenerated.
+- Config is written to `sessions.conf` so changes survive restarts.
+- When adding a session you are offered the option to start it right away.
+
+> **Note on tmux.conf:** `session-menu.sh` syncs live key bindings via `tmux bind-key` at startup and after every change. If you run `tmux source-file ~/.tmux.conf` manually, the menu script re-syncs bindings on its next start. To make Prefix+key bindings permanent across full tmux server restarts, add the corresponding `bind-key` lines to `conf/tmux.conf` as well.
+
+---
+
 ## Key Files
 
 | File | Role |
 |------|------|
-| `conf/sessions.conf` | Session definitions (edit this to add/remove sessions) |
+| `conf/sessions.conf` | Session definitions — edit directly or via `[e]` in the menu |
 | `conf/tmux.conf` | Full tmux configuration |
 | `scripts/start-sessions.sh` | Creates any missing sessions; sourced by ssh-attach and tmsm |
-| `scripts/session-menu.sh` | Interactive arrow-key menu running in the `main` session |
+| `scripts/session-menu.sh` | Interactive arrow-key menu with built-in session management |
 | `scripts/ssh-attach.sh` | Called from `~/.bashrc` on SSH login to auto-attach tmux |
 | `scripts/tmsm.sh` | Installed as `~/.local/bin/tsm`; the user-facing launcher |
 | `install.sh` | One-time idempotent setup script |
 
 ---
 
-## Adding a New Session
+## Adding a New Session (manual method)
+
+The preferred way is `[e]` in the menu. If you prefer to edit files directly:
 
 1. Append one entry to each array in `conf/sessions.conf`.
-2. Add a `bind-key <letter> run-shell '...'` line in `conf/tmux.conf`.
-3. Update the `status-right` string in `conf/tmux.conf` to include the new key hint.
-4. Reload tmux config: `tmux source-file ~/.tmux.conf`.
-5. Start the session: `bash scripts/start-sessions.sh <name>`.
+2. Optionally add a `bind-key <letter> run-shell '...'` line in `conf/tmux.conf` for a persistent shortcut.
+3. Reload tmux config if you edited tmux.conf: `tmux source-file ~/.tmux.conf`.
+4. Start the session: `bash scripts/start-sessions.sh <name>`.
 
 ---
 
